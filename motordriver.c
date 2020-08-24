@@ -1,7 +1,4 @@
 #include "motordriver.h"
-#include "Arduino.h"
-#include "assert.h"
-
 
 //------------------------------------------------------------------------------
 // C OOP Implementation
