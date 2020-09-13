@@ -92,5 +92,5 @@ bool MotorDriver__turnOnMotor( MotorDriver* self, MotorState state );
 MotorState MotorDriver__getMotorState( MotorDriver* self );
 ```
 
-ветка CubeMX - облегченная версия способная работать на младших мк и с проектом от CubeMX
-применение либы в проекте https://github.com/pecherskiy-v/BMW-32F030P4
+РІРµС‚РєР° CubeMX - РѕР±Р»РµРіС‡РµРЅРЅР°СЏ РІРµСЂСЃРёСЏ СЃРїРѕСЃРѕР±РЅР°СЏ СЂР°Р±РѕС‚Р°С‚СЊ РЅР° РјР»Р°РґС€РёС… РјРє Рё СЃ РїСЂРѕРµРєС‚РѕРј РѕС‚ CubeMX
+РїСЂРёРјРµРЅРµРЅРёРµ Р»РёР±С‹ РІ РїСЂРѕРµРєС‚Рµ https://github.com/pecherskiy-v/BMW-32F030P4
