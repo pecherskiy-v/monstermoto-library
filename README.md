@@ -91,3 +91,6 @@ bool MotorDriver__turnOnMotor( MotorDriver* self, MotorState state );
 ```C 
 MotorState MotorDriver__getMotorState( MotorDriver* self );
 ```
+
+ветка CubeMX - облегченная версия способная работать на младших мк и с проектом от CubeMX
+применение либы в проекте https://github.com/pecherskiy-v/BMW-32F030P4
