@@ -1,4 +1,5 @@
 #include "motordriver.h"
+#include "main.h"
 
 //------------------------------------------------------------------------------
 // C OOP Implementation
@@ -7,148 +8,75 @@
 // create a struct MotorDriver (Analog to C++ Class) 
 // containing control pins for each motor driver chip
 // on Sparkfun Monster Motor shield
-typedef struct MotorDriver
-{
-    uint8_t en;                  // enable input/output (ANALOG)
-    uint8_t cs;                  // current sense output (ANALOG)
-    uint8_t inA;                 // clockwise input
-    uint8_t inB;                 // counterclockwise input
-    uint8_t pwm;                 // pwm input
+typedef struct MotorDriver {
     DriverConfiguration mode; // HALFBRIDGE or FULLBRIDGE
     MotorState state;         // state of connected motor
 } MotorDriver;
 
 ////////////////////////////////////////////////////////////////////////////////
-
-// Function to initialize variables
-void MotorDriver__init( MotorDriver* self, 
-                        uint8_t en, 
-                        uint8_t cs, 
-                        uint8_t inA,
-                        uint8_t inB, 
-                        uint8_t pwm, 
-                        DriverConfiguration mode )
-{ 
-    self->en = en;
-    self->cs = cs;
-    self->inA = inA;
-    self->inB = inB;
-    self->pwm = pwm;
-    self->mode = mode;
-    self->state = BRAKETOGND;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
+MotorDriver md = {0};
 // Function to create a MotorDriver instance
-MotorDriver* MotorDriver__create( uint8_t en, 
-                                  uint8_t cs, 
-                                  uint8_t inA,
-                                  uint8_t inB, 
-                                  uint8_t pwm, 
-                                  DriverConfiguration mode )    // C constructor
+void MotorDriver__init(DriverConfiguration mode)    // C constructor
 {
-    // allocate memory
-    MotorDriver* md = ( MotorDriver* ) malloc( sizeof( MotorDriver ) );
-    assert( md );
-//    if( !md )
-//    {
-//        return null;
-//    }
+  // initialize with variables
+  md.mode = mode;
+  md.state = BRAKETOGND;
 
-    // initialize with variables
-    MotorDriver__init( md, en, cs, inA, inB, pwm, mode );
-    
-    // map Arduino<->Motor Shield pins
-    pinMode( md->inA, OUTPUT );
-    pinMode( md->pwm, OUTPUT );
-    pinMode( md->cs, INPUT );
-    digitalWrite( md->inA, LOW );
-    
-    if ( mode == FULLBRIDGE )
-    {
-        pinMode( md->inB, OUTPUT );
-        digitalWrite( md->inB, LOW );
-    }
-
-    
-    return md;  
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void MotorDriver__reset( MotorDriver* self )
-{
-  
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// Function to destruct MotoDriver instance
-void MotorDriver__destroy( MotorDriver* md )
-{
-    if ( md ) // if allocated memory i.e. not null
-    {
-        MotorDriver__reset( md );
-        free( md );
-    }
+  if (mode == FULLBRIDGE) {
+    LL_GPIO_ResetOutputPin(outB_GPIO_Port, outB_Pin);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Function to change the driver configuration (HALFBRIDGE OR FULLBRIDGE)
-void MotorDriver__changeBridgeMode( MotorDriver* self, 
-                                                   DriverConfiguration mode )
-{
-    if ( MotorDriver__motorDriverStatus( self ) && 
-         self->mode != mode )   // if no fault, i.e. is true and 
-                                // different mode specified
-    {
-        MotorState current_state = self->state;   // save current state
-        MotorDriver__turnOffMotor( self );    // turn off motor
-        self->mode = mode;    // update mode
-        MotorDriver__turnOnMotor( self, current_state );
-    }
+void MotorDriver__changeBridgeMode(DriverConfiguration mode) {
+  if (MotorDriver__motorDriverIsFaulty() &&
+      md.mode != mode)   // if no fault, i.e. is true and
+    // different mode specified
+  {
+    MotorState current_state = md.state;   // save current state
+    MotorDriver__turnOffMotor();    // turn off motor
+    md.mode = mode;    // update mode
+    MotorDriver__turnOnMotor(current_state);
+  }
 
-    // otherwise, do nothing
+  // otherwise, do nothing
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Function to check motor driver status
 // Returns: true if fault is detected (shutdown), false if none 
-bool MotorDriver__motorDriverIsFaulty( MotorDriver* self )
-{
-    // en pin is already pulling HIGH in hardware
-    // but if a fault causes shutdown,
-    // this pin will output LOW
-    ( digitalRead( self->en ) == LOW ) ? true : false;
+bool MotorDriver__motorDriverIsFaulty() {
+  // en pin is already pulling HIGH in hardware
+  // but if a fault causes shutdown,
+  // this pin will output LOW
+
+  return !(LL_GPIO_ReadInputPort(motorEN_DIAG_GPIO_Port)&motorEN_DIAG_Pin);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Function to check motor current draw
 // Returns: current draw value mapped from 0 to 1024
-unsigned int MotorDriver__checkMotorCurrentDraw( MotorDriver* self )
-{
-    return analogRead( self->cs );
-}
+//unsigned int MotorDriver__checkMotorCurrentDraw(MotorDriver *self) {
+//  return HAL_ADC_GetValue(&hadc);;
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Function to turn off motor
 // Returns: nothing
-void MotorDriver__turnOffMotor( MotorDriver* self )
-{
-    digitalWrite( self->inA, LOW );
-    
-    if ( self->mode == FULLBRIDGE )
-    {
-        digitalWrite( self->inB, LOW );
-    }
-    
-    analogWrite( self->pwm, 0 );
-    self->state = BRAKETOGND;
+void MotorDriver__turnOffMotor() {
+  LL_GPIO_ResetOutputPin(outA_GPIO_Port, outA_Pin);
+
+  if (md.mode == FULLBRIDGE) {
+    LL_GPIO_ResetOutputPin(outB_GPIO_Port, outB_Pin);
+  }
+
+//  analogWrite(self->pwm, 0);
+  md.state = BRAKETOGND;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,47 +87,35 @@ void MotorDriver__turnOffMotor( MotorDriver* self )
 //               mode = HALFBRIDGE || FULLBRIDGE
 // Parameter: state - one of four(two) states - see enum motorState above
 // Returns: true if operation is successful, false if state is incompatible
-bool MotorDriver__turnOnMotor( MotorDriver* self, MotorState state )
-{    
-    if ( self->mode == HALFBRIDGE )
-    {
-        if ( state == CLOCKWISE )
-        {
-            digitalWrite( self->inA, HIGH );
-        }
-            
-        else if ( state == BRAKETOGND )
-        {
-            digitalWrite( self->inA, LOW );
-        }
-
-        else
-        {
-            return false;
-        }
+bool MotorDriver__turnOnMotor(MotorState state) {
+  if (md.mode == HALFBRIDGE) {
+    if (state == CLOCKWISE) {
+      LL_GPIO_SetOutputPin(outA_GPIO_Port, outA_Pin);
+    } else if (state == BRAKETOGND) {
+      LL_GPIO_ResetOutputPin(outA_GPIO_Port, outA_Pin);
+    } else {
+      return false;
     }
+  } else // if mode == FULLBRIDGE
+  {
+    // set GPIO states
+    (state == CLOCKWISE || state == BRAKETOVCC) ?
+      LL_GPIO_SetOutputPin(outA_GPIO_Port, outA_Pin) :
+      LL_GPIO_ResetOutputPin(outA_GPIO_Port, outA_Pin);
 
-    else // if mode == FULLBRIDGE
-    {
-        // set GPIO states
-        ( state == CLOCKWISE || state == BRAKETOVCC ) ? 
-            digitalWrite( self->inA, HIGH ) : 
-            digitalWrite( self->inA, LOW );
+    (state == COUNTERCLOCKWISE || state == BRAKETOVCC) ?
+      LL_GPIO_SetOutputPin(outB_GPIO_Port, outB_Pin) :
+      LL_GPIO_ResetOutputPin(outB_GPIO_Port, outB_Pin);
+  }
 
-        ( state == COUNTERCLOCKWISE || state == BRAKETOVCC )?
-            digitalWrite( self->inB, HIGH ) : 
-            digitalWrite( self->inB, LOW );
-    }
-
-    self->state = state;
-    return true;
+  md.state = state;
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Function to check operating state of Motor Driver
-MotorState MotorDriver__getMotorState( MotorDriver* self )
-{
-    return self->state;
+MotorState MotorDriver__getMotorState() {
+  return md.state;
 }
 

@@ -2,24 +2,24 @@
 #define MOTORDRIVER_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 //------------------------------------------------------------------------------
 // enums
 //------------------------------------------------------------------------------
 
 // Two modes as defined in VNH2SP30 datasheet. 
-typedef enum driverConfiguration
-{
+typedef enum driverConfiguration {
     HALFBRIDGE,
     FULLBRIDGE
 } DriverConfiguration;
-    
-    
+
+
 // Four states as defined in VNH2SP30 datasheet.
 // If configured as half bridge, the only available
 // modes are CLOCKWISE and BRAKETOGND  
-typedef enum motorState
-{
+typedef enum motorState {
     CLOCKWISE,
     COUNTERCLOCKWISE,
     BRAKETOVCC,
@@ -35,28 +35,22 @@ extern "C"
 {
 #endif
 
-    typedef struct MotorDriver MotorDriver;
-    
-    MotorDriver* MotorDriver__create( 
-        uint8_t en, uint8_t cs, uint8_t inA, 
-        uint8_t inB, uint8_t pwm, DriverConfiguration mode );   // C constructor
-    
-    void MotorDriver__destroy( MotorDriver* self );       // C destructor
+typedef struct MotorDriver MotorDriver;
 
+void MotorDriver__init(DriverConfiguration mode);   // C constructor
 
-    // member functions
-    void MotorDriver__changeBridgeMode( 
-        MotorDriver* self, DriverConfiguration mode );
-    
-    bool MotorDriver__motorDriverIsFaulty( MotorDriver* self );
-    
-    unsigned int MotorDriver__checkMotorCurrentDraw( MotorDriver* self );
-    
-    void MotorDriver__turnOffMotor( MotorDriver* self );
-    
-    bool MotorDriver__turnOnMotor( MotorDriver* self, MotorState state );
-    
-    MotorState MotorDriver__getMotorState( MotorDriver* self );
+// member functions
+void MotorDriver__changeBridgeMode(DriverConfiguration mode);
+
+bool MotorDriver__motorDriverIsFaulty();
+
+unsigned int MotorDriver__checkMotorCurrentDraw();
+
+void MotorDriver__turnOffMotor();
+
+bool MotorDriver__turnOnMotor(MotorState state);
+
+MotorState MotorDriver__getMotorState();
 
 #ifdef __cplusplus
 }

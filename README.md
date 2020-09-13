@@ -48,10 +48,10 @@ folder or your Arduino sketch folder.
 3. Create instances of the motorDriver "class" in your Arduino file.
 
 ```C
-MotorDriver* motorDriver_A = MotorDriver__create( MD_A_EN, MD_A_CS, MD_A_INA,
+MotorDriver* motorDriver_A = MotorDriver__init( MD_A_EN, MD_A_CS, MD_A_INA,
     MD_A_INB, MD_A_PWM, FULLBRIDGE );
     
-MotorDriver* motorDriver_B = MotorDriver__create( MD_B_EN, MD_B_CS, MD_B_INA,
+MotorDriver* motorDriver_B = MotorDriver__init( MD_B_EN, MD_B_CS, MD_B_INA,
     MD_B_INB, MD_B_PWM, FULLBRIDGE );
 ```
 
